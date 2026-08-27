@@ -4,8 +4,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_MPU6050.h>
-#include <Adafruit_BMP280.h>
-#include <DHT.h>
 #include "config.h"
 
 struct SensorData {
@@ -17,11 +15,6 @@ struct SensorData {
     float gyroZ;
     float tiltX; // Kalman filtered
     float tiltY; // Kalman filtered
-    float temperature;
-    float pressure;
-    float humidity;
-    float dhtTemp;
-    float gasLevel;
     float crackDisplacement;
     float batteryVoltage;
     bool isAlert;
@@ -38,8 +31,6 @@ public:
 
 private:
     Adafruit_MPU6050 mpu;
-    Adafruit_BMP280 bmp;
-    DHT dht;
     
     // Kalman filter variables
     float Q_angle;

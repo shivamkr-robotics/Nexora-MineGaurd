@@ -13,10 +13,6 @@ struct MeshPacket {
     uint32_t timestamp;
     float tiltX;
     float tiltY;
-    float pressure;
-    float temperature;
-    float humidity;
-    float gasPpm;
     float vibFftFreq;
     float vibFftAmp;
     float crackDisp;
@@ -31,7 +27,7 @@ public:
     void init();
     bool sendData(MeshPacket& packet);
     
-    // For Node D aggregation
+    // For Node C aggregation
     MeshPacket* getBufferedPackets();
     int getBufferedCount();
     void clearBuffer();

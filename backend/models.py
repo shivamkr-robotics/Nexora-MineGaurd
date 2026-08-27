@@ -43,10 +43,6 @@ class SensorReading(db.Model):
     node_id = db.Column(db.String(50), db.ForeignKey('mesh_nodes.node_id'), nullable=False)
     tilt_x = db.Column(db.Float)
     tilt_y = db.Column(db.Float)
-    pressure = db.Column(db.Float)
-    temperature = db.Column(db.Float)
-    humidity = db.Column(db.Float)
-    gas_ppm = db.Column(db.Float)
     vibration_magnitude = db.Column(db.Float)
     vib_fft_freq = db.Column(db.Float)
     vib_fft_amp = db.Column(db.Float)
@@ -55,6 +51,7 @@ class SensorReading(db.Model):
     battery_level = db.Column(db.Float)
     is_anomaly = db.Column(db.Boolean, default=False)
     risk_level = db.Column(db.String(20)) # Low, Medium, High, Critical
+    severity_score = db.Column(db.Float, default=0.0)
 
     def __repr__(self):
         return f"<SensorReading {self.node_id} @ {self.timestamp}>"

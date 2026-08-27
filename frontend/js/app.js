@@ -44,10 +44,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const nodeDataStore = {
-        'NODE_A': { tilt: 0, vibration: 0, gas: 0, pressure: 0, rssi: -70, battery: 100, status: 'safe' },
-        'NODE_B': { tilt: 0, vibration: 0, gas: 0, pressure: 0, rssi: -70, battery: 100, status: 'safe' },
-        'NODE_C': { tilt: 0, vibration: 0, gas: 0, pressure: 0, rssi: -70, battery: 100, status: 'safe' },
-        'NODE_D': { tilt: 0, vibration: 0, gas: 0, pressure: 0, rssi: -70, battery: 100, status: 'safe' }
+        'NODE_A': { tilt: 0, vibration: 0, rssi: -70, battery: 100, status: 'safe' },
+        'NODE_B': { tilt: 0, vibration: 0, rssi: -70, battery: 100, status: 'safe' },
+        'NODE_C': { tilt: 0, vibration: 0, rssi: -70, battery: 100, status: 'safe' },
+        'NODE_D': { tilt: 0, vibration: 0, rssi: -70, battery: 100, status: 'safe' }
     };
 
     function updateNodeList() {
@@ -78,8 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateNodeList();
     drawGauge('gauge-tilt', 0, 0, 90, '°', '#00e5ff');
     drawGauge('gauge-vib', 0, 0, 100, 'Hz', '#00e5ff');
-    drawGauge('gauge-gas', 0, 0, 10, '%', '#00e676');
-    drawGauge('gauge-pres', 0, 900, 1100, 'hPa', '#ffab00');
+    drawGauge('gauge-crack', 0, 0, 10, 'mm', '#ff3366');
 
     // Socket.IO
     const socket = io('http://localhost:5000');
@@ -107,14 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update Text
             document.getElementById('val-tilt').innerText = data.tilt.toFixed(2);
             document.getElementById('val-vib').innerText = data.vibration.toFixed(2);
-            document.getElementById('val-gas').innerText = (data.gas || 0).toFixed(2);
-            document.getElementById('val-pres').innerText = (data.pressure || 0).toFixed(1);
             
             // Draw Gauges
-            drawGauge('gauge-tilt', data.tilt, 0, 45, '°', '#00e5ff');
-            drawGauge('gauge-vib', data.vibration, 0, 50, 'Hz', '#ffab00');
-            drawGauge('gauge-gas', data.gas || 0, 0, 5, '%', '#00e676');
-            drawGauge('gauge-pres', data.pressure || 1000, 900, 1100, 'hPa', '#ff1744');
+            drawGauge('gauge-tilt', data.tilt_x || 0, 0, 45, '°', '#00e5ff');
+            drawGauge('gauge-vib', data.vib_fft_amp || 0, 0, 5, 'g', '#ffab00');
+            drawGauge('gauge-crack', data.crack_disp || 0, 0, 10, 'mm', '#ff3366');
             
             // Update charts
             window.charts.updateRealtimeCharts(nodeId, data.tilt, data.vibration);

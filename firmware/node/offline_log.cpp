@@ -24,16 +24,12 @@ void OfflineLogger::logReading(MeshPacket& packet) {
         file = LittleFS.open(logFilePath, FILE_APPEND);
     }
     
-    // timestamp,nodeId,tiltX,tiltY,pressure,temp,humidity,gas,fftFreq,fftAmp,battery
-    file.printf("%u,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
+    // timestamp,nodeId,tiltX,tiltY,fftFreq,fftAmp,battery
+    file.printf("%u,%s,%.2f,%.2f,%.2f,%.2f,%.2f\n",
         packet.timestamp,
         packet.nodeId,
         packet.tiltX,
         packet.tiltY,
-        packet.pressure,
-        packet.temperature,
-        packet.humidity,
-        packet.gasPpm,
         packet.vibFftFreq,
         packet.vibFftAmp,
         packet.batteryV
@@ -77,9 +73,9 @@ void OfflineLogger::readAndClear(LogCallback callback) {
 
 void OfflineLogger::parseCsvLine(String line, MeshPacket& packet) {
     // Simple CSV parser for offline flush
-    // Format: timestamp,nodeId,tiltX,tiltY,pressure,temp,humidity,gas,fftFreq,fftAmp,battery
+    // Format: timestamp,nodeId,tiltX,tiltY,fftFreq,fftAmp,battery
     int index = 0;
-    String parts[11];
+    String parts[7];
     
     for (unsigned int i = 0; i < line.length(); i++) {
         if (line[i] == ',') {
@@ -93,13 +89,9 @@ void OfflineLogger::parseCsvLine(String line, MeshPacket& packet) {
     strncpy(packet.nodeId, parts[1].c_str(), 8);
     packet.tiltX = parts[2].toFloat();
     packet.tiltY = parts[3].toFloat();
-    packet.pressure = parts[4].toFloat();
-    packet.temperature = parts[5].toFloat();
-    packet.humidity = parts[6].toFloat();
-    packet.gasPpm = parts[7].toFloat();
-    packet.vibFftFreq = parts[8].toFloat();
-    packet.vibFftAmp = parts[9].toFloat();
-    packet.batteryV = parts[10].toFloat();
+    packet.vibFftFreq = parts[4].toFloat();
+    packet.vibFftAmp = parts[5].toFloat();
+    packet.batteryV = parts[6].toFloat();
 }
 
 size_t OfflineLogger::getUsedSpace() {

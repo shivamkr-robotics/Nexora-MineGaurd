@@ -4,7 +4,7 @@
 // Node Identity - change this for each physical node
 #define NODE_ID "NODE_A" // Valid options: "NODE_A", "NODE_B", "NODE_C", "NODE_D"
 
-// Define HAS_LORA only for Node D
+// Define HAS_LORA only for Node C
 // #define HAS_LORA 
 
 // Mesh Configuration
@@ -13,8 +13,7 @@
 // Pin Definitions
 #define I2C_SDA 21
 #define I2C_SCL 22
-#define DHT_PIN 4
-#define MQ4_PIN 34
+#define FLEX_SENSOR_PIN 34
 #define BUZZER_PIN 15
 #define LED_STATUS 2
 #define BATTERY_PIN 36
@@ -24,7 +23,7 @@
   // LoRa Pins
   #define LORA_CS 5
   #define LORA_RST 14
-  #define LORA_IRQ 26
+  #define LORA_IRQ 2
   #define LORA_MOSI 23
   #define LORA_MISO 19
   #define LORA_SCK 18
@@ -39,8 +38,6 @@
 // Thresholds
 #define THRESHOLD_TILT 15.0
 #define THRESHOLD_VIB_G 1.5
-#define THRESHOLD_GAS_PPM 1000.0
-#define THRESHOLD_TEMP 45.0
 
 // Timing Intervals (ms)
 #define NORMAL_READ_INTERVAL 5000

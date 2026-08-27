@@ -39,6 +39,7 @@ build/
 
 # Handbook (kept local only)
 docs/PROJECT_HANDBOOK.md
+docs/COAL_MINE_KNOWLEDGE_HANDBOOK.md
 
 # Logs
 *.log

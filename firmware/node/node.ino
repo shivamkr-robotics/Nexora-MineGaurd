@@ -79,10 +79,6 @@ void loop() {
         packet.timestamp = millis();
         packet.tiltX = currentData.tiltX;
         packet.tiltY = currentData.tiltY;
-        packet.pressure = currentData.pressure;
-        packet.temperature = currentData.temperature;
-        packet.humidity = currentData.humidity;
-        packet.gasPpm = currentData.gasLevel;
         packet.crackDisp = currentData.crackDisplacement;
         packet.batteryV = currentData.batteryVoltage;
         packet.vibFftFreq = fftAnalyzer.getDominantFrequency();
@@ -99,7 +95,7 @@ void loop() {
         }
         
 #ifdef HAS_LORA
-        // If this is Node D, forward aggregated data to Gateway
+        // If this is Node C, forward aggregated data to Gateway
         int count = meshMgr.getBufferedCount();
         if (count > 0) {
             MeshPacket* packets = meshMgr.getBufferedPackets();
@@ -122,7 +118,7 @@ void loop() {
         // Status heartbeat
         digitalWrite(LED_STATUS, !digitalRead(LED_STATUS));
         
-        Serial.printf("T:%.2f H:%.2f TiltX:%.2f FFTF:%.2f Alert:%d\n", 
-            currentData.temperature, currentData.humidity, currentData.tiltX, packet.vibFftFreq, currentData.isAlert);
+        Serial.printf("TiltX:%.2f FFTF:%.2f Alert:%d\n", 
+            currentData.tiltX, packet.vibFftFreq, currentData.isAlert);
     }
 }

@@ -1,6 +1,6 @@
 #include "sensors.h"
 
-SensorManager::SensorManager() : dht(DHT_PIN, DHT22) {
+SensorManager::SensorManager() {
     Q_angle = 0.001f;
     Q_bias = 0.003f;
     R_measure = 0.03f;
@@ -23,14 +23,8 @@ void SensorManager::init() {
         Serial.println("Failed to find MPU6050 chip");
     }
     
-    if (!bmp.begin()) {
-        Serial.println("Failed to find BMP280 chip");
-    }
-    
-    dht.begin();
-    
-    pinMode(MQ4_PIN, INPUT);
     pinMode(BATTERY_PIN, INPUT);
+    pinMode(FLEX_SENSOR_PIN, INPUT);
 }
 
 void SensorManager::calibrate() {
@@ -90,17 +84,12 @@ void SensorManager::readSensors(SensorData& data) {
     data.tiltX = getKalmanAngle(roll, data.gyroX, dt, angleX, biasX);
     data.tiltY = getKalmanAngle(pitch, data.gyroY, dt, angleY, biasY);
     
-    data.temperature = bmp.readTemperature();
-    data.pressure = bmp.readPressure();
-    data.humidity = dht.readHumidity();
-    data.dhtTemp = dht.readTemperature();
-    
-    data.gasLevel = analogRead(MQ4_PIN); // Raw value, can map to ppm
     data.batteryVoltage = (analogRead(BATTERY_PIN) / 4095.0) * 3.3 * 2.0; // Voltage divider
     
-    data.crackDisplacement = 0.0f; // Default
-    // TODO: implement crack sensor reading using ADC
-    // data.crackDisplacement = analogRead(CRACK_SENSOR_PIN) * factor;
+    // Read flex sensor (ADC 0-4095) for crack displacement simulation
+    int flexRaw = analogRead(FLEX_SENSOR_PIN);
+    // Simple mapping: assume 0 = 0mm, 4095 = 10.0mm of displacement
+    data.crackDisplacement = (flexRaw / 4095.0f) * 10.0f;
     
     detectAnomaly(data);
 }
@@ -109,14 +98,6 @@ void SensorManager::detectAnomaly(SensorData& data) {
     data.isAlert = false;
     
     if (abs(data.tiltX) > THRESHOLD_TILT || abs(data.tiltY) > THRESHOLD_TILT) {
-        data.isAlert = true;
-    }
-    
-    if (data.gasLevel > THRESHOLD_GAS_PPM) { // basic check
-        data.isAlert = true;
-    }
-    
-    if (data.temperature > THRESHOLD_TEMP || data.dhtTemp > THRESHOLD_TEMP) {
         data.isAlert = true;
     }
 }

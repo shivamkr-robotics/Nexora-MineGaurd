@@ -4,7 +4,7 @@
 // LoRa Pins
 #define LORA_CS_PIN 5
 #define LORA_RST_PIN 14
-#define LORA_IRQ_PIN 26
+#define LORA_IRQ_PIN 2
 
 // LoRa Settings
 #define LORA_FREQ 433.0

@@ -6,7 +6,7 @@ from flask_socketio import SocketIO
 from config import Config
 from models import db, MeshNode, SensorReading, Alert, FFTSnapshot
 from serial_ingester import SerialIngester
-from ai_predictor import AIPredictor
+from ai_predictor import ExplainableDetector
 from fft_processor import FFTProcessor
 from alert_engine import AlertEngine
 
@@ -29,7 +29,7 @@ def init_services():
     with app.app_context():
         db.create_all()
         
-    ai_predictor = AIPredictor(lstm_path=app.config['LSTM_MODEL_PATH'], iforest_path=app.config['IFOREST_MODEL_PATH'])
+    ai_predictor = ExplainableDetector()
     alert_engine = AlertEngine(app.config)
     
     # Start serial ingestion in background
@@ -61,9 +61,6 @@ def get_latest_sensors():
                 "timestamp": reading.timestamp.isoformat(),
                 "tilt_x": reading.tilt_x,
                 "tilt_y": reading.tilt_y,
-                "pressure": reading.pressure,
-                "temperature": reading.temperature,
-                "gas_ppm": reading.gas_ppm,
                 "risk_level": reading.risk_level
             })
     return jsonify(latest_readings)
@@ -85,10 +82,7 @@ def get_sensor_history():
     return jsonify([{
         "timestamp": r.timestamp.isoformat(),
         "tilt_x": r.tilt_x,
-        "tilt_y": r.tilt_y,
-        "pressure": r.pressure,
-        "temperature": r.temperature,
-        "gas_ppm": r.gas_ppm
+        "tilt_y": r.tilt_y
     } for r in readings])
 
 @app.route('/api/alerts', methods=['GET'])
@@ -121,17 +115,25 @@ def get_fft(node_id):
 
 @app.route('/api/prediction/<node_id>', methods=['GET'])
 def get_prediction(node_id):
-    # Fetch last 10 readings
-    readings = SensorReading.query.filter_by(node_id=node_id).order_by(SensorReading.timestamp.desc()).limit(10).all()
-    if len(readings) < 10:
+    # Retrieve the last 2 readings (minimum required for explainable rate)
+    readings = SensorReading.query.filter_by(node_id=node_id).order_by(SensorReading.timestamp.desc()).limit(2).all()
+    if len(readings) < 2:
         return jsonify({"error": "Insufficient data for prediction"}), 400
         
     readings.reverse()
-    features = []
+    
+    # Process sequentially through detector (just to get latest output state for prediction endpoint)
+    detector = ExplainableDetector()
     for r in readings:
-        features.append([r.tilt_x, r.tilt_y, r.pressure, r.temperature, r.humidity, r.gas_ppm, r.vib_fft_freq, r.vib_fft_amp])
+        prediction = detector.process_reading(
+            node_id=r.node_id, 
+            tilt_x=r.tilt_x, 
+            tilt_y=r.tilt_y, 
+            rssi=r.rssi, 
+            crack_disp=r.crack_displacement, 
+            vib_spike=r.vib_fft_amp
+        )
         
-    prediction = ai_predictor.predict_subsidence(features)
     return jsonify(prediction)
 
 @app.route('/api/system/status', methods=['GET'])

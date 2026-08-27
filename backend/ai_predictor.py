@@ -1,113 +1,89 @@
+import math
 import numpy as np
-import pandas as pd
-from sklearn.ensemble import IsolationForest
-import tensorflow as tf
-from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.layers import LSTM, Dense, Dropout
-import os
+from collections import defaultdict
 
-class AIPredictor:
+class ExplainableDetector:
     """
-    Handles LSTM sequence predictions and Isolation Forest anomaly detection
-    for mine subsidence monitoring.
+    Explainable Rate-of-Change + Anomaly Scoring model.
+    Replaces the previous LSTM/Isolation Forest model.
+    Computes a Severity Score based on tilt rate, RSSI drift, crack displacement, and vibration spikes.
     """
-    def __init__(self, lstm_path='models/lstm_subsidence.keras', iforest_path='models/iforest_anomaly.pkl'):
-        self.lstm_path = lstm_path
-        self.iforest_path = iforest_path
-        self.lstm_model = None
-        self.iforest_model = None
-        self.feature_cols = ['tilt_x', 'tilt_y', 'pressure', 'temperature', 'humidity', 'gas_ppm', 'vib_fft_freq', 'vib_fft_amp']
-        self.seq_length = 10
-        self._load_or_train_models()
+    def __init__(self, window_size=6, w1=1.0, w2=0.5, w3=2.0, w4=1.5):
+        self.window_size = window_size
+        self.node_history = defaultdict(list)
+        
+        # Weights for Severity Score
+        self.w1 = w1 # tilt_rate
+        self.w2 = w2 # rssi_drift
+        self.w3 = w3 # crack_disp
+        self.w4 = w4 # vib_spike
 
-    def _load_or_train_models(self):
-        """Loads models if they exist, otherwise trains dummy models."""
-        os.makedirs(os.path.dirname(self.lstm_path), exist_ok=True)
-        if os.path.exists(self.lstm_path):
-            try:
-                self.lstm_model = load_model(self.lstm_path)
-                print(f"Loaded LSTM model from {self.lstm_path}")
-            except Exception as e:
-                print(f"Could not load LSTM: {e}. Training new one.")
-                self.train_dummy_models()
+    def process_reading(self, node_id, tilt_x, tilt_y, rssi, crack_disp, vib_spike):
+        """
+        Processes a single sensor reading and computes the severity score and risk level.
+        Returns a dict containing 'risk_level' and 'severity_score'.
+        """
+        history = self.node_history[node_id]
+        
+        # Current reading dictionary
+        reading = {
+            "tilt_mag": math.sqrt(tilt_x**2 + tilt_y**2),
+            "rssi": rssi if rssi is not None else -50,
+            "crack_disp": crack_disp if crack_disp is not None else 0.0,
+            "vib_spike": vib_spike if vib_spike is not None else 0.0
+        }
+        
+        history.append(reading)
+        
+        # Keep a rolling window of specified size
+        if len(history) > self.window_size:
+            history.pop(0)
+            
+        # Not enough history for rate-of-change analysis
+        if len(history) < 2:
+            return {"risk_level": "Low", "severity_score": 0.0}
+            
+        # Calculate rates (deltas) for the window
+        tilt_rates = []
+        rssi_drifts = []
+        for i in range(1, len(history)):
+            tilt_rates.append(history[i]["tilt_mag"] - history[i-1]["tilt_mag"])
+            rssi_drifts.append(history[i]["rssi"] - history[i-1]["rssi"])
+            
+        # Extract the most recent rates
+        latest_tilt_rate = tilt_rates[-1]
+        latest_rssi_drift = rssi_drifts[-1]
+        
+        # Compute z-scores based on the window history
+        if len(tilt_rates) > 1:
+            mean_tr = np.mean(tilt_rates)
+            std_tr = np.std(tilt_rates) + 1e-6 # Add epsilon to avoid div by zero
+            z_tilt = abs(latest_tilt_rate - mean_tr) / std_tr
+            
+            mean_rd = np.mean(rssi_drifts)
+            std_rd = np.std(rssi_drifts) + 1e-6
+            z_rssi = abs(latest_rssi_drift - mean_rd) / std_rd
         else:
-            self.train_dummy_models()
-
-    def train_dummy_models(self):
-        """
-        Generates REALISTIC synthetic mine data and trains models.
-        Normal: tilt ~0-3°, pressure ~1000-1020 hPa, temp ~25-35°C, gas ~0-200 ppm
-        Anomalous: tilt >10°, pressure drops, gas spikes
-        LSTM = Long Short-Term Memory, a type of neural network that remembers patterns over time.
-        """
-        print("Training dummy AI models...")
-        # Generate synthetic data
-        num_samples = 1000
-        normal_data = np.random.normal(loc=[1.5, 1.5, 1010, 30, 50, 100, 20, 0.05], 
-                                     scale=[1.0, 1.0, 5, 2, 5, 50, 5, 0.02], 
-                                     size=(num_samples, 8))
-        
-        # Train Isolation Forest
-        self.iforest_model = IsolationForest(contamination=0.05, random_state=42)
-        self.iforest_model.fit(normal_data)
-        
-        # Prepare sequence data for LSTM
-        X, y = [], []
-        for i in range(len(normal_data) - self.seq_length):
-            X.append(normal_data[i:i+self.seq_length])
-            # Target is a dummy risk level (0 to 1) based on tilt
-            target = min(1.0, max(0.0, normal_data[i+self.seq_length][0] / 15.0))
-            y.append(target)
+            z_tilt = 0.0
+            z_rssi = 0.0
             
-        X = np.array(X)
-        y = np.array(y)
+        latest_crack = reading["crack_disp"]
+        latest_vib = reading["vib_spike"]
         
-        # Build LSTM Architecture
-        self.lstm_model = Sequential([
-            LSTM(64, return_sequences=True, input_shape=(self.seq_length, 8)),
-            Dropout(0.2),
-            LSTM(32),
-            Dense(16, activation='relu'),
-            Dense(1, activation='sigmoid')
-        ])
+        # Compute final Severity Score
+        severity_score = (self.w1 * z_tilt) + (self.w2 * z_rssi) + (self.w3 * latest_crack) + (self.w4 * latest_vib)
         
-        self.lstm_model.compile(optimizer='adam', loss='mse')
-        self.lstm_model.fit(X, y, epochs=5, batch_size=32, verbose=0)
-        self.lstm_model.save(self.lstm_path)
-        print("Model training complete and saved.")
-
-    def predict_subsidence(self, sequence):
-        """
-        Predicts subsidence risk based on a sequence of historical data.
-        Returns dict with predicted_displacement, risk_level, confidence.
-        """
-        if self.lstm_model is None or len(sequence) != self.seq_length:
-            return {"predicted_displacement": 0.0, "risk_level": "Unknown", "confidence": 0.0}
-            
-        seq_array = np.array([sequence])
-        prediction = self.lstm_model.predict(seq_array, verbose=0)[0][0]
-        
-        risk_level = "Low"
-        if prediction > 0.8:
-            risk_level = "Critical"
-        elif prediction > 0.6:
-            risk_level = "High"
-        elif prediction > 0.4:
-            risk_level = "Medium"
+        # Determine Risk Level
+        if severity_score > 15:
+            risk = "Critical"
+        elif severity_score > 10:
+            risk = "High"
+        elif severity_score > 5:
+            risk = "Medium"
+        else:
+            risk = "Low"
             
         return {
-            "predicted_displacement": float(prediction * 10), # Dummy scaling
-            "risk_level": risk_level,
-            "confidence": float(1.0 - abs(0.5 - prediction) * 2) # Dummy confidence
+            "risk_level": risk, 
+            "severity_score": float(severity_score)
         }
-
-    def detect_anomaly(self, features):
-        """
-        Uses Isolation Forest to detect if a single reading is anomalous.
-        Returns boolean.
-        """
-        if self.iforest_model is None:
-            return False
-        # features is a 1D array of 8 elements
-        pred = self.iforest_model.predict([features])
-        return pred[0] == -1
