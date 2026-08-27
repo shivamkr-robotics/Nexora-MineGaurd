@@ -15,7 +15,7 @@
 #define I2C_SCL 22
 #define FLEX_SENSOR_PIN 34
 #define BUZZER_PIN 15
-#define LED_STATUS 2
+#define LED_STATUS 4
 #define BATTERY_PIN 36
 
 #ifdef HAS_LORA

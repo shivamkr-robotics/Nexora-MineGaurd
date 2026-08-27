@@ -16,7 +16,7 @@
 #define SERIAL_BAUD 115200
 
 // LEDs
-#define STATUS_LED_PIN 2
+#define STATUS_LED_PIN 15
 #define RECV_LED_PIN 4
 
 #endif // CONFIG_H
