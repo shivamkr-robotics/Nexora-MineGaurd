@@ -24,12 +24,14 @@ void OfflineLogger::logReading(MeshPacket& packet) {
         file = LittleFS.open(logFilePath, FILE_APPEND);
     }
     
-    // timestamp,nodeId,tiltX,tiltY,fftFreq,fftAmp,battery
-    file.printf("%u,%s,%.2f,%.2f,%.2f,%.2f,%.2f\n",
+    // timestamp,nodeId,tiltX,tiltY,crackDisp,rssi,fftFreq,fftAmp,battery
+    file.printf("%u,%s,%.2f,%.2f,%.2f,%d,%.2f,%.2f,%.2f\n",
         packet.timestamp,
         packet.nodeId,
         packet.tiltX,
         packet.tiltY,
+        packet.crackDisp,
+        packet.rssi,
         packet.vibFftFreq,
         packet.vibFftAmp,
         packet.batteryV
@@ -73,9 +75,9 @@ void OfflineLogger::readAndClear(LogCallback callback) {
 
 void OfflineLogger::parseCsvLine(String line, MeshPacket& packet) {
     // Simple CSV parser for offline flush
-    // Format: timestamp,nodeId,tiltX,tiltY,fftFreq,fftAmp,battery
+    // Format: timestamp,nodeId,tiltX,tiltY,crackDisp,rssi,fftFreq,fftAmp,battery
     int index = 0;
-    String parts[7];
+    String parts[9];
     
     for (unsigned int i = 0; i < line.length(); i++) {
         if (line[i] == ',') {
@@ -89,9 +91,11 @@ void OfflineLogger::parseCsvLine(String line, MeshPacket& packet) {
     strncpy(packet.nodeId, parts[1].c_str(), 8);
     packet.tiltX = parts[2].toFloat();
     packet.tiltY = parts[3].toFloat();
-    packet.vibFftFreq = parts[4].toFloat();
-    packet.vibFftAmp = parts[5].toFloat();
-    packet.batteryV = parts[6].toFloat();
+    packet.crackDisp = parts[4].toFloat();
+    packet.rssi = parts[5].toInt();
+    packet.vibFftFreq = parts[6].toFloat();
+    packet.vibFftAmp = parts[7].toFloat();
+    packet.batteryV = parts[8].toFloat();
 }
 
 size_t OfflineLogger::getUsedSpace() {
