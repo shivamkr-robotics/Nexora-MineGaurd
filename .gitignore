@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+venv/
+.env
+
+# Flask / SQLite
+instance/
+*.db
+*.sqlite3
+
+# AI Models
+models/
+*.h5
+*.keras
+*.pkl
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Arduino build
+*.elf
+*.bin
+*.hex
+build/
+
+# Logs
+*.log

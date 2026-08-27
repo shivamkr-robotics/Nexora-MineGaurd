@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexora MineGuard | Mine Subsidence Monitoring System</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+    <header class="dashboard-header">
+        <div class="header-left">
+            <i class="fa-solid fa-helmet-safety"></i>
+            <h1>Nexora MineGuard | Mine Subsidence Monitoring System</h1>
+        </div>
+        <div class="header-right">
+            <div class="system-status">
+                <span class="status-dot online"></span> System Online
+            </div>
+            <div id="clock" class="clock">--:--:--</div>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+        <!-- Left Sidebar -->
+        <aside class="sidebar-left">
+            <div class="panel">
+                <h2><i class="fa-solid fa-map-location-dot"></i> Mine GIS Map</h2>
+                <div id="gis-map"></div>
+            </div>
+            <div class="panel node-list-panel">
+                <h2><i class="fa-solid fa-network-wired"></i> Sensor Nodes</h2>
+                <ul id="node-list">
+                    <!-- Populated by JS -->
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Area -->
+        <main class="main-area">
+            <div class="panel node-selector-panel">
+                <label for="node-selector">Viewing Node:</label>
+                <select id="node-selector">
+                    <option value="NODE_A">NODE_A</option>
+                    <option value="NODE_B">NODE_B</option>
+                    <option value="NODE_C">NODE_C</option>
+                    <option value="NODE_D">NODE_D</option>
+                </select>
+            </div>
+
+            <div class="gauges-row">
+                <div class="panel gauge-card">
+                    <h3>Tilt (deg)</h3>
+                    <canvas id="gauge-tilt"></canvas>
+                    <div class="gauge-val" id="val-tilt">0.0</div>
+                </div>
+                <div class="panel gauge-card">
+                    <h3>Vibration (Hz)</h3>
+                    <canvas id="gauge-vib"></canvas>
+                    <div class="gauge-val" id="val-vib">0.0</div>
+                </div>
+                <div class="panel gauge-card">
+                    <h3>Gas CH4 (%)</h3>
+                    <canvas id="gauge-gas"></canvas>
+                    <div class="gauge-val" id="val-gas">0.0</div>
+                </div>
+                <div class="panel gauge-card">
+                    <h3>Pressure (hPa)</h3>
+                    <canvas id="gauge-pres"></canvas>
+                    <div class="gauge-val" id="val-pres">0.0</div>
+                </div>
+            </div>
+
+            <div class="charts-row">
+                <div class="panel chart-container-half">
+                    <h3><i class="fa-solid fa-chart-line"></i> Tilt Trend</h3>
+                    <canvas id="chart-tilt"></canvas>
+                </div>
+                <div class="panel chart-container-half">
+                    <h3><i class="fa-solid fa-wave-square"></i> Vibration Trend</h3>
+                    <canvas id="chart-vib"></canvas>
+                </div>
+            </div>
+
+            <div class="panel chart-container">
+                <h3><i class="fa-solid fa-chart-bar"></i> Vibration FFT Analysis</h3>
+                <canvas id="chart-fft"></canvas>
+            </div>
+
+            <div class="panel chart-container">
+                <h3><i class="fa-solid fa-wifi"></i> RSSI Monitoring</h3>
+                <canvas id="chart-rssi"></canvas>
+            </div>
+
+            <div class="panel chart-container">
+                <h3><i class="fa-solid fa-brain"></i> LSTM Subsidence Prediction</h3>
+                <canvas id="chart-prediction"></canvas>
+            </div>
+        </main>
+
+        <!-- Right Sidebar -->
+        <aside class="sidebar-right">
+            <div class="panel alerts-panel">
+                <div class="alerts-header">
+                    <h2><i class="fa-solid fa-bell"></i> Alerts</h2>
+                    <button id="btn-ack-all" class="btn-ack">Acknowledge All</button>
+                </div>
+                <div id="alert-list" class="alert-list">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- CDNs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <!-- Application Scripts -->
+    <script src="js/gis_map.js"></script>
+    <script src="js/fft_chart.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/alerts.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
