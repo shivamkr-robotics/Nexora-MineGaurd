@@ -37,5 +37,8 @@ desktop.ini
 *.hex
 build/
 
+# Handbook (kept local only)
+docs/PROJECT_HANDBOOK.md
+
 # Logs
 *.log
