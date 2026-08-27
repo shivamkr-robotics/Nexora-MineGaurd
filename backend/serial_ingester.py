@@ -10,10 +10,12 @@ class SerialIngester:
     """
     Reads USB Serial from the gateway and processes data.
     """
-    def __init__(self, app, socketio, config):
+    def __init__(self, app, socketio, config, ai_predictor, alert_engine):
         self.app = app
         self.socketio = socketio
         self.config = config
+        self.ai_predictor = ai_predictor
+        self.alert_engine = alert_engine
         self.running = False
         self.serial_port = config.SERIAL_PORT
         self.serial_baud = config.SERIAL_BAUD
@@ -116,14 +118,34 @@ class SerialIngester:
                     battery_level=node_data.get("battery_level", 0.0)
                 )
 
-                # TODO: Run AI prediction here if enough history (demo stubbed for now)
-                reading.is_anomaly = False
-                reading.risk_level = "Low"
+                # Run AI anomaly detection
+                features = [reading.tilt_x, reading.tilt_y, reading.pressure, reading.temperature, reading.humidity, reading.gas_ppm, reading.vib_fft_freq, reading.vib_fft_amp]
+                reading.is_anomaly = self.ai_predictor.detect_anomaly([features])
+                
+                # We need history for LSTM prediction, let's fetch last 9 readings from DB + current
+                history = SensorReading.query.filter_by(node_id=node_id).order_by(SensorReading.timestamp.desc()).limit(9).all()
+                if len(history) == 9:
+                    # We have enough data
+                    history.reverse()
+                    seq = []
+                    for r in history:
+                        seq.append([r.tilt_x, r.tilt_y, r.pressure, r.temperature, r.humidity, r.gas_ppm, r.vib_fft_freq, r.vib_fft_amp])
+                    seq.append(features)
+                    
+                    prediction = self.ai_predictor.predict_subsidence(seq)
+                    reading.risk_level = prediction['risk_level']
+                else:
+                    reading.risk_level = "Low"
 
                 db.session.add(reading)
                 db.session.commit()
 
-                # Emit websocket events
+                # Process Alerts
+                generated_alerts = self.alert_engine.process_reading(reading, reading.is_anomaly, reading.risk_level)
+                for alert in generated_alerts:
+                    self.socketio.emit('new_alert', alert)
+
+                # Emit websocket events for sensor data
                 self.socketio.emit('sensor_update', {
                     'node_id': node_id,
                     'tilt_x': reading.tilt_x,
@@ -131,5 +153,10 @@ class SerialIngester:
                     'pressure': reading.pressure,
                     'temperature': reading.temperature,
                     'gas_ppm': reading.gas_ppm,
+                    'vib_fft_freq': reading.vib_fft_freq,
+                    'vib_fft_amp': reading.vib_fft_amp,
+                    'rssi': reading.rssi,
+                    'battery_level': reading.battery_level,
+                    'status': node.status,
                     'timestamp': reading.timestamp.isoformat()
                 })

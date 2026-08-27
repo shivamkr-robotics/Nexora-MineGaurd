@@ -15,7 +15,7 @@
 #define I2C_SCL 22
 #define DHT_PIN 4
 #define MQ4_PIN 34
-#define BUZZER_PIN 18
+#define BUZZER_PIN 15
 #define LED_STATUS 2
 #define BATTERY_PIN 36
 
@@ -27,7 +27,8 @@
   #define LORA_IRQ 26
   #define LORA_MOSI 23
   #define LORA_MISO 19
-  #define LORA_SCK 18 // Note: Conflict with BUZZER_PIN in this case, might need adjustment
+  #define LORA_SCK 18
+
 #else
   #define LED_ALERT 19
 #endif

@@ -33,7 +33,7 @@ def init_services():
     alert_engine = AlertEngine(app.config)
     
     # Start serial ingestion in background
-    serial_ingester = SerialIngester(app, socketio, app.config)
+    serial_ingester = SerialIngester(app, socketio, app.config, ai_predictor, alert_engine)
     serial_ingester.start()
 
 # --- REST ENDPOINTS ---
